@@ -1,43 +1,45 @@
 const app = {
   chart: null,
 
-  // 날짜 유틸리티
-  getDates: () => {
+  // 최근 7일 날짜 생성
+  getDates() {
       const end = new Date();
       const start = new Date();
-      start.setDate(end.getDate() - 7); // 최근 7일
-      
-      const formatDate = (d) => {
-          const yyyy = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
-          return `${yyyy}${mm}${dd}`;
+      start.setDate(end.getDate() - 6);
+
+      const format = d => {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const da = String(d.getDate()).padStart(2, "0");
+          return `${y}${m}${da}`;
       };
 
+      const labels = Array.from({ length: 7 }, (_, idx) => {
+          const d = new Date();
+          d.setDate(end.getDate() - (6 - idx));
+          return `${d.getMonth() + 1}/${d.getDate()}`;
+      });
+
       return {
-          startStr: formatDate(start),
-          endStr: formatDate(end),
-          labels: Array.from({length: 7}, (_, i) => {
-              const d = new Date();
-              d.setDate(d.getDate() - (6-i));
-              return `${d.getMonth()+1}/${d.getDate()}`;
-          })
+          startStr: format(start),
+          endStr: format(end),
+          labels
       };
   },
 
-  fetchData: async () => {
-      const loading = document.getElementById('loading');
-      const dashboard = document.getElementById('dashboard');
-      const region = document.getElementById('station').value;
+  // API 호출
+  async fetchData() {
+      const loading = document.getElementById("loading");
+      const dashboard = document.getElementById("dashboard");
+      const region = document.getElementById("station").value;
 
-      loading.classList.remove('hidden');
-      dashboard.classList.add('hidden');
+      loading.classList.remove("hidden");
+      dashboard.classList.add("hidden");
 
       try {
-          const { startStr, endStr, labels } = app.getDates();
+          const { startStr, endStr, labels } = this.getDates();
 
-          // 1. Vercel 서버리스 함수 호출 (내부 API)
-          // 외부 API URL을 직접 쓰지 않고, 내가 만든 /api/... 주소를 호출함
+          // Vercel 프록시 API 호출
           const [weatherRes, dustRes] = await Promise.all([
               fetch(`/api/weather?startDate=${startStr}&endDate=${endStr}`),
               fetch(`/api/air?stationName=${encodeURIComponent(region)}`)
@@ -46,68 +48,70 @@ const app = {
           const weatherData = await weatherRes.json();
           const dustData = await dustRes.json();
 
-          console.log('Weather:', weatherData);
-          console.log('Dust:', dustData);
+          console.log("Weather Data:", weatherData);
+          console.log("Dust Data:", dustData);
 
-          // 데이터 파싱 (API 응답 구조에 따라 조정 필요)
-          // 예시: 실제 데이터가 배열 형태라고 가정하고 매핑
-          // 만약 데이터가 없다면 테스트용 랜덤 데이터로 대체 (오류 방지)
-          let windData = [], pm10Data = [];
-
+          // 풍속 데이터 파싱
+          let windData = [];
           if (weatherData.response?.body?.items?.item) {
-               windData = weatherData.response.body.items.item.map(i => i.avgWs || 0);
+              windData = weatherData.response.body.items.item.map(
+                  item => item.avgWs || 0
+              );
           } else {
-               // 데이터가 없을 경우 가상 데이터 (데모용)
-               windData = labels.map(() => Math.random() * 5 + 1);
+              windData = labels.map(() => Math.random() * 3 + 1);
           }
 
+          // 미세먼지 데이터 파싱
+          let pm10Data = [];
           if (dustData.response?.body?.items) {
-              pm10Data = dustData.response.body.items.map(i => i.pm10Value || 0).reverse().slice(0, 7);
+              pm10Data = dustData.response.body.items
+                  .map(item => item.pm10Value || 0)
+                  .reverse()
+                  .slice(0, 7);
           } else {
-              // 데이터가 없을 경우 가상 데이터 (데모용)
-              pm10Data = labels.map(() => Math.random() * 50 + 20);
+              pm10Data = labels.map(() => Math.random() * 40 + 20);
           }
 
-          app.updateChart(labels, pm10Data, windData);
-          dashboard.classList.remove('hidden');
+          // 차트 갱신
+          this.updateChart(labels, pm10Data, windData);
 
-      } catch (error) {
-          alert('데이터를 불러오는데 실패했습니다: ' + error.message);
-          console.error(error);
+          dashboard.classList.remove("hidden");
+      } catch (err) {
+          alert("데이터 조회 실패: " + err.message);
       } finally {
-          loading.classList.add('hidden');
+          loading.classList.add("hidden");
       }
   },
 
-  updateChart: (labels, pm10Data, windData) => {
-      const ctx = document.getElementById('correlationChart').getContext('2d');
-      
-      if (app.chart) app.chart.destroy();
+  // 차트 업데이트
+  updateChart(labels, pm10Data, windData) {
+      const canvas = document.getElementById("correlationChart");
+      const ctx = canvas.getContext("2d");
 
-      app.chart = new Chart(ctx, {
-          type: 'bar',
+      if (this.chart) this.chart.destroy();
+
+      this.chart = new Chart(ctx, {
+          type: "bar",
           data: {
-              labels: labels,
+              labels,
               datasets: [
                   {
-                      label: '미세먼지 (PM10)',
+                      label: "PM10 (㎍/㎥)",
                       data: pm10Data,
-                      backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                      borderColor: 'rgba(255, 99, 132, 1)',
+                      backgroundColor: "rgba(255,99,132,0.5)",
+                      borderColor: "rgba(255,99,132,1)",
                       borderWidth: 1,
-                      yAxisID: 'y',
-                      order: 2
+                      yAxisID: "y"
                   },
                   {
-                      label: '풍속 (m/s)',
+                      label: "풍속 (m/s)",
                       data: windData,
-                      type: 'line',
-                      borderColor: 'rgba(54, 162, 235, 1)',
-                      backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                      type: "line",
+                      borderColor: "rgba(54,162,235,1)",
+                      backgroundColor: "rgba(54,162,235,0.2)",
                       borderWidth: 3,
-                      tension: 0.4,
-                      yAxisID: 'y1',
-                      order: 1
+                      yAxisID: "y1",
+                      tension: 0.4
                   }
               ]
           },
@@ -116,17 +120,13 @@ const app = {
               maintainAspectRatio: false,
               scales: {
                   y: {
-                      type: 'linear',
-                      display: true,
-                      position: 'left',
-                      title: { display: true, text: '농도 (µg/m³)' }
+                      position: "left",
+                      title: { display: true, text: "PM10 (㎍/㎥)" }
                   },
                   y1: {
-                      type: 'linear',
-                      display: true,
-                      position: 'right',
+                      position: "right",
                       grid: { drawOnChartArea: false },
-                      title: { display: true, text: '풍속 (m/s)' }
+                      title: { display: true, text: "풍속 (m/s)" }
                   }
               }
           }
@@ -134,5 +134,8 @@ const app = {
   }
 };
 
-// 전역 객체에 할당 (HTML에서 호출 가능하도록)
+// 버튼 이벤트 연결
+document.getElementById("btn").addEventListener("click", () => app.fetchData());
+
+// 전역 등록
 window.app = app;

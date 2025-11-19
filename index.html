@@ -27,7 +27,7 @@
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto p-4 pt-8">
+    <main id="dashboard" class="max-w-4xl mx-auto p-4 pt-8 hidden">
         <section class="panel bg-white p-6 rounded-xl shadow-lg mb-8">
             <div class="toolbar flex flex-col md:flex-row gap-3 mb-6">
                 <input id="station" value="종로구" placeholder="측정소 이름(예: 종로구)" class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" />
@@ -53,7 +53,7 @@
                 <!-- 시간별 농도 차트 -->
                 <div class="col-span-1 lg:col-span-2 bg-gray-50 p-4 rounded-xl shadow-inner h-[300px]">
                     <h3 class="font-bold text-gray-700 mb-2">시간별 미세먼지 농도 변화</h3>
-                    <canvas id="timeChart"></canvas>
+                    <canvas id="correlationChart"></canvas>
                 </div>
             </div>
 
