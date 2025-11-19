@@ -22,7 +22,8 @@ const app = {
     loading.classList.remove("hidden");
 
     try {
-      const {startStr, endStr, labels} = this.getDates();
+      console.log("버튼 클릭됨"); // 클릭 확인용 로그
+      const { startStr, endStr, labels } = this.getDates();
 
       const [dustRes, weatherRes] = await Promise.all([
         fetch(`/api/air?stationName=${encodeURIComponent(region)}`),
@@ -44,7 +45,7 @@ const app = {
       this.updateChart(labels, pm10Data, windData);
 
     } catch(err) {
-      alert("데이터 조회 실패: "+err.message);
+      console.error("fetchData 오류:", err);
     } finally {
       loading.classList.add("hidden");
     }
