@@ -28,7 +28,7 @@ const app = {
   fetchData: async () => {
       const loading = document.getElementById('loading');
       const dashboard = document.getElementById('dashboard');
-      const region = document.getElementById('region').value;
+      const region = document.getElementById('station').value;
 
       loading.classList.remove('hidden');
       dashboard.classList.add('hidden');
