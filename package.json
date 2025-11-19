@@ -1,10 +1,11 @@
 {
-  "name": "air-dashboard",
+  "name": "climate-dust-analysis",
   "version": "1.0.0",
-  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo \"Static front + serverless functions\"",
     "start": "vercel dev"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
   }
 }

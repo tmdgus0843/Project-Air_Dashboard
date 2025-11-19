@@ -1,50 +1,96 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>미세먼지 대시보드 (Vercel ver.)</title>
-  <link rel="stylesheet" href="./css/styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🌿 미세먼지 실시간 대시보드</title>
+    
+    <!-- Tailwind CSS CDN 추가 (디자인 프레임워크) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN (사용자 버전 유지) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    
+    <!-- 한글 폰트 설정 및 CSS 연결 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css" />
+    
+    <style>
+        /* Tailwind를 덮어쓰거나 커스텀 스타일 정의 */
+        body { font-family: 'Noto Sans KR', sans-serif; }
+    </style>
 </head>
-<body>
-  <header>
-    <h1>🌿 미세먼지 실시간 대시보드</h1>
-    <p class="sub">Vercel 서버리스 프록시로 CORS 없이 정부 API 연동</p>
-  </header>
+<body class="bg-gray-100 min-h-screen">
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="max-w-4xl mx-auto p-4">
+            <h1 class="text-3xl font-bold">🌿 미세먼지 실시간 대시보드</h1>
+            <p class="sub text-blue-200 mt-1">Vercel 서버리스 프록시로 CORS 없이 정부 API 연동</p>
+        </div>
+    </header>
 
-  <main>
-    <section class="panel">
-      <div class="toolbar">
-        <input id="station" value="종로구" placeholder="측정소 이름(예: 종로구)" />
-        <button id="btn">조회</button>
-      </div>
+    <main class="max-w-4xl mx-auto p-4 pt-8">
+        <section class="panel bg-white p-6 rounded-xl shadow-lg mb-8">
+            <div class="toolbar flex flex-col md:flex-row gap-3 mb-6">
+                <input id="station" value="종로구" placeholder="측정소 이름(예: 종로구)" class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" />
+                <button id="btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition shadow-md">
+                    데이터 조회
+                </button>
+            </div>
 
-      <div class="grid2">
-        <div><canvas id="timeChart"></canvas></div>
-        <div class="stat" id="statusBox">대기 중…</div>
-      </div>
+            <!-- 로딩 상태 표시 영역 -->
+            <div id="loading" class="hidden flex justify-center items-center py-10">
+                <div class="spinner"></div>
+                <p class="ml-3 text-lg text-gray-500">데이터를 불러오는 중...</p>
+            </div>
 
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th>시간</th><th>PM10</th><th>PM2.5</th><th>오존(O₃)</th><th>이산화질소(NO₂)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- PM10, PM2.5 상태 요약 카드 -->
+                <div id="statusBox" class="col-span-1 lg:col-span-1 p-5 rounded-xl text-center flex flex-col justify-center transition-colors">
+                    <p class="text-xl font-semibold text-gray-700 mb-2">실시간 PM10 상태</p>
+                    <div id="statusText" class="text-4xl font-extrabold text-white">대기 중…</div>
+                    <p id="statusValue" class="text-sm font-light mt-2 text-gray-200"></p>
+                </div>
+                
+                <!-- 시간별 농도 차트 -->
+                <div class="col-span-1 lg:col-span-2 bg-gray-50 p-4 rounded-xl shadow-inner h-[300px]">
+                    <h3 class="font-bold text-gray-700 mb-2">시간별 미세먼지 농도 변화</h3>
+                    <canvas id="timeChart"></canvas>
+                </div>
+            </div>
 
-    <aside class="panel">
-      <h3>Tips</h3>
-      <ul>
-        <li>측정소 이름만 입력하면 됩니다. (API Key는 서버(프록시)에서 사용)</li>
-        <li>기상청 API는 <code>/api/weather</code> 엔드포인트로 확장 가능</li>
-      </ul>
-    </aside>
-  </main>
+            <!-- 상세 데이터 테이블 -->
+            <div class="mt-8 overflow-x-auto">
+                <h3 class="text-xl font-bold mb-3 text-gray-700">시간별 상세 측정 데이터</h3>
+                <table id="tbl" class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">측정시간</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PM10 (㎍/㎥)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PM2.5 (㎍/㎥)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">오존(O₃)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이산화질소(NO₂)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">통합 등급</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr><td colspan="6" class="p-4 text-center text-gray-500">조회 버튼을 눌러 데이터를 불러오세요.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-  <footer>ⓒ 천상고등학교 지승현</footer>
-  <script src="./js/app.js" defer></script>
+        <aside class="panel bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-400">
+            <h3 class="text-xl font-bold mb-3 text-blue-600">📝 탐구 활동 Tips</h3>
+            <ul class="list-disc list-inside space-y-2 text-gray-700">
+                <li>측정소 이름만 입력하면 됩니다. (API Key는 보안을 위해 Vercel 서버(프록시)에서 관리됨)</li>
+                <li>향후 기상청 API 연동을 위해 **<code>/api/weather</code> 엔드포인트**를 확장하여 풍속, 기온 등과의 상관관계를 분석해보세요.</li>
+                <li>`js/app.js`에서 데이터의 **결측치(`-`) 처리** 로직을 추가하면 안정성이 높아집니다.</li>
+            </ul>
+        </aside>
+    </main>
+
+    <footer class="text-center py-4 text-gray-500 text-sm border-t mt-8">ⓒ 천상고등학교 지승현</footer>
+    
+    <!-- 3. 내가 만든 자바스크립트 연결 -->
+    <script src="./js/app.js" defer></script>
 </body>
 </html>
