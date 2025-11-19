@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>미세먼지 대시보드 (Vercel ver.)</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+</head>
+<body>
+  <header>
+    <h1>🌿 미세먼지 실시간 대시보드</h1>
+    <p class="sub">Vercel 서버리스 프록시로 CORS 없이 정부 API 연동</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="toolbar">
+        <input id="station" value="종로구" placeholder="측정소 이름(예: 종로구)" />
+        <button id="btn">조회</button>
+      </div>
+
+      <div class="grid2">
+        <div><canvas id="timeChart"></canvas></div>
+        <div class="stat" id="statusBox">대기 중…</div>
+      </div>
+
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>시간</th><th>PM10</th><th>PM2.5</th><th>오존(O₃)</th><th>이산화질소(NO₂)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <aside class="panel">
+      <h3>Tips</h3>
+      <ul>
+        <li>측정소 이름만 입력하면 됩니다. (API Key는 서버(프록시)에서 사용)</li>
+        <li>기상청 API는 <code>/api/weather</code> 엔드포인트로 확장 가능</li>
+      </ul>
+    </aside>
+  </main>
+
+  <footer>ⓒ 천상고등학교 지승현</footer>
+  <script src="./js/app.js" defer></script>
+</body>
+</html>
